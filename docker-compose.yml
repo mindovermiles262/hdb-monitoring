@@ -1,69 +1,81 @@
 services:
-  harperdb:
-    image: harperdb/harperdb:latest
+  hdb:
+    image: ghcr.io/mindovermiles262/hdb-application:latest
     ports:
       - "9925:9925"  # HTTP API port
       - "9926:9926"  # WebSocket port
     environment:
-      - HDB_ADMIN_USERNAME=${HDB_ADMIN_USERNAME:-admin}
-      - HDB_ADMIN_PASSWORD=${HDB_ADMIN_PASSWORD:-password}
+      - HDB_ADMIN_USERNAME=admin
+      - HDB_ADMIN_PASSWORD=ChangeMe!
       - LOCALSTUDIO_ENABLED=true
     volumes:
       - harperdb_data:/opt/harperdb/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9925"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     labels:
       - "prometheus.io/scrape=true"
       - "prometheus.io/port=9925"
 
+  # Linux Mint - Docker
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     privileged: true
+    restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/containers:/var/lib/containers:ro
-      - /dev/disk/:/dev/disk:ro
-    restart: unless-stopped
+      - "/:/rootfs:ro"
+      - "/dev/disk/:/dev/disk:ro"
+      - "/etc/machine-id:/etc/machine-id:ro"
+      - "/sys:/sys:ro"
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+      - "/var/lib/containers:/var/lib/containers:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/var/run:/var/run:rw"
+
+  # MacOS - Docker - Maybe? Cannot confirm it works!
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:latest
+  #   container_name: cadvisor
+  #   privileged: true
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/containers:/var/lib/containers:ro
+  #     - /dev/disk/:/dev/disk:ro
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./promstack/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
     depends_on:
       - cadvisor
-    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=ChangeMe!
+      - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - "3000:3000"
     volumes:
+      - "./promstack/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml"
+      - "./promstack/dashboard.json:/var/lib/grafana/dashboards/dashboard.json"
+      - "./promstack/default.yaml:/etc/grafana/provisioning/dashboards/default.yaml"
       - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
     depends_on:
       - prometheus
-    restart: unless-stopped
 
 volumes:
   harperdb_data:

@@ -6,7 +6,7 @@ import base64
 class HarperDBOperations:
     def __init__(self, host="http://localhost:9925", username=None, password=None):
         self.host = host
-        self.username = username or os.getenv("HDB_ADMIN_USERNAME", "admin")
+        self.username = username or os.getenv("HDB_ADMIN_USERNAME", "HDB_ADMIN")
         self.password = password or os.getenv("HDB_ADMIN_PASSWORD", "password")
         self.headers = {
             "Content-Type": "application/json",

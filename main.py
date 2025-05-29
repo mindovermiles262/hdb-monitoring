@@ -5,7 +5,10 @@ from HarperDBOperations import HarperDBOperations
 
 def main():
     # Initialize HarperDB operations
-    harper = HarperDBOperations()
+    harper = HarperDBOperations(
+        username="admin",
+        password="ChangeMe!"
+    )
 
     # Validate connection
     if not harper.validate_connection():
@@ -13,11 +16,11 @@ def main():
         return
 
     # Create schema and table
+    db_name = "data"
     table_name = "pokemon"
-    db_name = "pokemon"
 
-    harper.create_database(db_name)
-    harper.create_table(db_name, table_name)
+    # harper.create_database(db_name)
+    # harper.create_table(db_name, table_name)
 
     # Sample data
     records = initial_records
